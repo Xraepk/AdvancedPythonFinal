@@ -1,0 +1,2 @@
+class LengthError(Exception):
+    pass
