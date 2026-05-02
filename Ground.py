@@ -24,7 +24,7 @@ class Ground:
         for item in self.items:
             if item.get_name() == name:
                 return item
-        return InventoryItem("Empty")
+        return None
 
     def save(self):
         items_list = self.items[:]
@@ -48,9 +48,11 @@ class Ground:
             self.items = []
 
     def print_ground(self):
-        print("Ground:")
-        for item in range(len(self.items)):
-            print(f"\t#{item + 1}: ", self.items[item].get_name())
-
-    def clear_ground(self):
-        self.items = []
+        if self.items:
+            print("Ground:\n")
+            for item in range(len(self.items)):
+                print(f"\t#{item + 1}: ", self.items[item].get_name())
+            return True
+        else:
+            print("No items on ground")
+            return False

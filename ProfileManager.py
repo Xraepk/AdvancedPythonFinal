@@ -26,7 +26,7 @@ class ProfileManager:
     def create_profile(self, name, slot_num):
         for profile in self.profile_list:
             if profile.get_name() == name:
-                print("File name already exists")
+                input("File name already exists. (Enter): ")
                 return
         if self.profile_list[slot_num - 1].get_name() == "Empty":
             self.profile_list[slot_num - 1] = Profile(slot_num, name)
