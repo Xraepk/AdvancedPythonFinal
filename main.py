@@ -1,8 +1,12 @@
-
-
+from InventoryItem import InventoryItem
+from GameManager import GameManager
 
 def main():
-    pass
+    game = GameManager()
+    game.start_game()
+
+
+
 
 if __name__ == '__main__':
     main()

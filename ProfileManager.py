@@ -1,34 +1,66 @@
 from Profile import Profile
-from Exceptions import LengthError
+import pandas as pd
+import sqlite3 as sql
 
 class ProfileManager:
     def __init__(self, profile_list=None, loaded_profile=None):
         if profile_list is None:
-            profile_list = [
-                Profile("Empty", 1),
-                Profile("Empty", 2),
-                Profile("Empty", 3)
-            ]
-        if len(profile_list) != 3:
-            raise LengthError("Profile Manager Load Failed: Invalid List Length")
-        for profile in profile_list:
-            if type(profile) != Profile or not type(profile) is None:
-                raise TypeError("Profile Manager Load Failed: Invalid Profile List")
-
+            profile_list = [Profile(1), Profile(2), Profile(3)]
         self.profile_list = profile_list
         self.loaded_profile = loaded_profile
 
     def load_profile(self, file_identifier):
         for profile in self.profile_list:
-            if type(profile) == Profile and profile.name == file_identifier or profile.id_num == file_identifier:
+            if str(profile.get_id()) == file_identifier or profile.get_name() == file_identifier:
                 self.loaded_profile = profile
-                break
+                return True
+        return False
 
-    def delete_profile(self, file_identifier):
+    def delete_profile(self, name):
         for i, profile in enumerate(self.profile_list):
-            if type(profile) == Profile and profile.name == file_identifier or profile.id_num == file_identifier:
-                self.profile_list[i].name = "Empty"
+            if profile.get_name() == name:
+                self.profile_list[i].clear()
+                return True
+        return False
 
-    def save_to_profile(self, name, slot_num, inventory):
-        if self.profile_list[slot_num - 1] is None:
-            self.profile_list[slot_num] = Profile(name, slot_num, inventory)
+    def create_profile(self, name, slot_num):
+        for profile in self.profile_list:
+            if profile.get_name() == name:
+                print("File name already exists")
+                return
+        if self.profile_list[slot_num - 1].get_name() == "Empty":
+            self.profile_list[slot_num - 1] = Profile(slot_num, name)
+        else:
+            overwrite_command = None
+            while overwrite_command != "Y" and overwrite_command != "N":
+                overwrite_command = input(f"Overwrite file {self.profile_list[slot_num - 1].get_name()}? "
+                                          f"This cannot be undone. (Y/N): ").upper().strip()
+            if overwrite_command == "Y":
+                self.profile_list[slot_num - 1] = Profile(slot_num, name)
+
+    def print_profiles(self):
+        print("Profiles:\n")
+        for i, profile in enumerate(self.profile_list):
+            print(f"\tProfile #{i + 1}: {profile.get_name()}")
+
+    def save(self):
+        for profile in self.profile_list:
+            profile.save()
+        profile_name_list = [profile.get_name() for profile in self.profile_list]
+        profile_name_list = pd.DataFrame(profile_name_list, columns=["Profile"])
+        connect = sql.connect("ProfileManager.db")
+        profile_name_list.to_sql("ProfileName", connect, if_exists='replace', index=False)
+        connect.close()
+
+    def load(self):
+        try:
+            for profile in self.profile_list:
+                profile.load()
+            connect = sql.connect("ProfileManager.db")
+            name_list = pd.read_sql_query("SELECT * FROM ProfileName", connect)
+            connect.close()
+            for i in range(len(name_list)):
+                self.profile_list[i].set_name(name_list.iloc[i, 0])
+        except pd.errors.DatabaseError:
+            self.save_profiles()
+            self.load()
