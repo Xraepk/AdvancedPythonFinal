@@ -26,10 +26,11 @@ class ProfileManager:
     def create_profile(self, name, slot_num):
         for profile in self.profile_list:
             if profile.get_name() == name:
-                print("File name already exists")
+                input("File name already exists. (Enter): ")
                 return
         if self.profile_list[slot_num - 1].get_name() == "Empty":
             self.profile_list[slot_num - 1] = Profile(slot_num, name)
+            self.profile_list[slot_num - 1].ground.clear_ground()
         else:
             overwrite_command = None
             while overwrite_command != "Y" and overwrite_command != "N":
@@ -62,5 +63,5 @@ class ProfileManager:
             for i in range(len(name_list)):
                 self.profile_list[i].set_name(name_list.iloc[i, 0])
         except pd.errors.DatabaseError:
-            self.save_profiles()
+            self.save()
             self.load()

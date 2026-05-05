@@ -28,11 +28,18 @@ class ItemRack:
     def print_contents(self):
         for i in range(3):
             for j in range(3):
-                print(self.items.iloc[i, j].slot_id, end=" ")
+                print(f"{self.items.iloc[i, j].get_name():^10}", end="")
             print()
 
     def get_item(self, row, column):
         return self.items.iloc[row, column]
+
+    def get_item_by_name(self, name):
+        for i in range(3):
+            for j in range(3):
+                if self.items.iloc[i, j].get_name() == name:
+                    return self.items.iloc[i, j]
+        return None
 
     def set_item(self, row, column, item):
         self.items.iloc[row, column] = item
@@ -40,8 +47,28 @@ class ItemRack:
     def remove_item(self, row, column):
         self.items.iloc[row, column] = blank_item
 
+    def remove_item_by_name(self, name):
+        for i in range(3):
+            for j in range(3):
+                if self.items.iloc[i, j].get_name() == name:
+                    self.items.iloc[i, j] = blank_item
+
     def clear_item_rack(self):
         self.items = pd.DataFrame(np.full((3, 3), blank_item))
+
+    def check_empty(self):
+        for i in range(3):
+            for j in range(3):
+                if self.items.iloc[i, j].get_name() != "Empty":
+                    return False
+        return True
+
+    def check_full(self):
+        for i in range(3):
+            for j in range(3):
+                if self.items.iloc[i, j].get_name() == "Empty":
+                    return False
+        return True
 
 if __name__ == '__main__':
     item_rack = ItemRack("Profile1ItemRack.db")
