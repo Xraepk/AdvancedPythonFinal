@@ -186,7 +186,7 @@ class GameManager:
                         add_item_name = profile.inventory[add_item - 1].get_name()
                         profile.item_rack_inventory_swap(add_item)
                         adding_item = False
-                        input(f"{add_item_name} added to ground. (Enter): ")
+                        input(f"{add_item_name} added to item rack. (Enter): ")
                         adding_item = False
                     except ValueError:
                         input("Invalid slot number. (Enter): ")
@@ -229,7 +229,7 @@ class GameManager:
             self.get_loaded().print_item_rack()
             if not self.get_loaded().check_empty_item_rack():
                 command = input("\nTAKE - add item to inventory from item rack"
-                                "\nADD - add item to ground from inventory"
+                                "\nADD - add item to item rack from inventory"
                                 "\nRETURN - return to main menu"
                                 "\n\nEnter: ").strip().upper()
                 if command == "TAKE":
@@ -239,7 +239,7 @@ class GameManager:
                 elif command == "RETURN":
                     inspecting_item_rack = False
             else:
-                command = input("\nADD - add item to ground from inventory"
+                command = input("\nADD - add item to item rack from inventory"
                                 "\nRETURN - return to main menu"
                                 "\n\nEnter: ").strip().upper()
                 if command == "ADD":
