@@ -99,7 +99,6 @@ class Profile:
     def save(self):
         self.item_rack.save()
         self.ground.save()
-        input("Chicken")
         items_list = self.inventory[:]
         for item in range(len(self.inventory)):
             items_list[item] = pickle.dumps(items_list[item])
@@ -156,7 +155,6 @@ class Profile:
         if self.item_rack.check_full():
             return True
         return False
-
 
 if __name__ == "__main__":
     pass
