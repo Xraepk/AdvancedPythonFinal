@@ -29,7 +29,6 @@ class GameManager:
                                  f"\nThis action cannot be undone. (Y/N):").upper().strip()
                 if failsafe == "Y":
                     self.profile_manager.delete_profile(profile.get_name())
-                    self.profile_manager.loaded_profile = None
                     self.save()
                     return False
                 else:
@@ -47,6 +46,7 @@ class GameManager:
                         if file_name == "Empty":
                             raise ValueError("Invalid file name")
                         self.profile_manager.create_profile(file_name, self.profile_manager.loaded_profile.get_id())
+                        self.get_loaded().ground.clear_ground()
                         self.save()
                         return False
                     except ValueError as e:
@@ -69,6 +69,7 @@ class GameManager:
                 else:
                     raise ValueError("Invalid slot number or file name")
                 if self.inspect_loaded_file():
+                    self.get_loaded().load()
                     file_loaded = True
             except ValueError as e:
                 input(f"\n{e} (Enter): ")
@@ -84,7 +85,7 @@ class GameManager:
                 profile.print_inventory()
                 add_item = input("\nEnter slot number to add to ground."
                                  "\nEnter RETURN to return to ground menu."
-                                 "\nEnter: ")
+                                 "\n\nEnter: ")
                 if add_item == "RETURN":
                     adding_item = False
                 else:
@@ -114,13 +115,13 @@ class GameManager:
                     profile.print_ground()
                     take_item = input("\nEnter item name to take from ground."
                                       "\nEnter RETURN to return to ground menu."
-                                      "\nEnter: ")
+                                      "\n\nEnter: ")
                     if take_item == "RETURN":
                         taking_item = False
                     if profile.ground.get_item(take_item) is None:
                         raise ValueError("Invalid item name.")
                     else:
-                        slot_num = profile.find_free_slot() + 1
+                        slot_num = profile.find_free_inventory_slot() + 1
                         profile.ground_inventory_swap(slot_num, take_item)
                         taking_item = False
                         input(f"{take_item} added to inventory. (Enter): ")
@@ -130,7 +131,7 @@ class GameManager:
     def inspect_ground(self):
         inspecting_ground = True
         while inspecting_ground:
-            if self.profile_manager.loaded_profile.print_ground():
+            if self.get_loaded().print_ground():
                 command = input("\nTAKE - add item to inventory from ground"
                                 "\nADD - add item to ground from inventory"
                                 "\nRETURN - return to main menu"
@@ -151,10 +152,99 @@ class GameManager:
                     inspecting_ground = False
             clear_screen()
 
+    def item_rack_add(self):
+        profile = self.get_loaded()
+        if profile.check_empty_inventory():
+            input("No objects in inventory. (Enter): ")
+        elif profile.check_full_item_rack():
+            input("Item rack is full. (Enter): ")
+        else:
+            adding_item = True
+            while adding_item:
+                clear_screen()
+                profile.print_inventory()
+                add_item = input("\nEnter slot number to add to item rack."
+                                 "\nEnter RETURN to return to item rack menu."
+                                 "\n\nEnter: ")
+                if add_item == "RETURN":
+                    adding_item = False
+                else:
+                    try:
+                        add_item = int(add_item)
+                        if not 1 <= add_item <= 4:
+                            raise IndexError("Invalid slot number.")
+                        if profile.inventory[add_item - 1].get_name() == "Empty":
+                            raise IndexError("Slot cannot be empty.")
+                        add_item_name = profile.inventory[add_item - 1].get_name()
+                        profile.item_rack_inventory_swap(add_item)
+                        adding_item = False
+                        input(f"{add_item_name} added to ground. (Enter): ")
+                        adding_item = False
+                    except ValueError:
+                        input("Invalid slot number. (Enter): ")
+                    except IndexError as e:
+                        input(f"{e} (Enter): ")
+
+    def item_rack_take(self):
+        profile = self.get_loaded()
+        if profile.check_full_inventory():
+            input("Inventory is full. (Enter): ")
+        else:
+            taking_item = True
+            while taking_item:
+                try:
+                    clear_screen()
+                    profile.print_item_rack()
+                    take_item = input("\nEnter item name to take from item rack."
+                                      "\nEnter RETURN to return to item rack menu."
+                                      "\n\nEnter: ")
+                    if take_item == "RETURN":
+                        taking_item = False
+                    if take_item == "Empty":
+                        raise ValueError("Slot cannot be empty.")
+                    if profile.item_rack.get_item_by_name(take_item) is None:
+                        raise ValueError("Invalid item name.")
+                    else:
+                        input(2)
+                        slot_num = profile.find_free_inventory_slot() + 1
+                        input(3)
+                        profile.item_rack_inventory_swap(slot_num, take_item)
+                        taking_item = False
+                        input(4)
+                        input(f"{take_item} added to inventory. (Enter): ")
+                except ValueError as e:
+                    input(f"{e} (Enter): ")
+
+    def inspect_item_rack(self):
+        inspecting_item_rack = True
+        while inspecting_item_rack:
+            self.get_loaded().print_item_rack()
+            if not self.get_loaded().check_empty_item_rack():
+                command = input("\nTAKE - add item to inventory from item rack"
+                                "\nADD - add item to ground from inventory"
+                                "\nRETURN - return to main menu"
+                                "\n\nEnter: ").strip().upper()
+                if command == "TAKE":
+                    self.item_rack_take()
+                elif command == "ADD":
+                    self.item_rack_add()
+                elif command == "RETURN":
+                    inspecting_item_rack = False
+            else:
+                command = input("\nADD - add item to ground from inventory"
+                                "\nRETURN - return to main menu"
+                                "\n\nEnter: ").strip().upper()
+                if command == "ADD":
+                    self.item_rack_add()
+                elif command == "RETURN":
+                    inspecting_item_rack = False
+            clear_screen()
+
     def play(self):
         profile = self.profile_manager.loaded_profile
         clear_screen()
-        while True:
+        playing = True
+        while playing:
             game_command = input("Enter \"HELP\" to see commands."
                                  "\nEnter: ").strip().upper()
             clear_screen()
@@ -163,11 +253,17 @@ class GameManager:
                       "\nGROUND - inspect ground"
                       "\nITEM RACK - inspect item rack"
                       "\nINVENTORY - inspect inventory"
+                      "\nSAVE - save game"
+                      "\nQUIT - quit the game"
                       "\n")
             elif game_command == "GROUND":
                 self.inspect_ground()
             elif game_command == "ITEM RACK":
-                pass
+                self.inspect_item_rack()
             elif game_command == "INVENTORY":
                 profile.print_inventory()
+            elif game_command == "SAVE":
+                self.save()
+            elif game_command == "QUIT":
+                playing = False
 

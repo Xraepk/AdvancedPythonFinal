@@ -2,6 +2,8 @@ from ItemRack import ItemRack
 from InventoryItem import InventoryItem, blank_item
 from Ground import Ground
 import pandas as pd
+import sqlite3 as sql
+import pickle
 
 class Profile:
 
@@ -26,22 +28,36 @@ class Profile:
         self.inventory[slot_num1 - 1] = self.inventory[slot_num2 - 1]
         self.inventory[slot_num2 - 1] = temp_item
 
-    def find_free_slot(self):
+    def find_free_inventory_slot(self):
         for slot in range(len(self.inventory)):
             if self.inventory[slot].get_name() == "Empty":
                 return slot
         return -1
 
+    def find_free_item_rack_slot(self):
+        for i in range(3):
+            for j in range(3):
+                if self.item_rack.get_item(i,j).get_name() == "Empty":
+                    return i, j
+        return -1, -1
+
     def add_inventory_item(self, item):
-        slot = self.find_free_slot()
+        slot = self.find_free_inventory_slot()
         if slot != -1:
             self.inventory[slot] = item
         print("Inventory Full")
 
-    def item_rack_inventory_swap(self, inventory_slot, rack_row, rack_col):
-        temp_item = self.inventory[inventory_slot - 1]
-        self.inventory[inventory_slot - 1] = self.item_rack.get_item(rack_row, rack_col)
-        self.item_rack.set_item(rack_row, rack_col, temp_item)
+    def item_rack_inventory_swap(self, inventory_slot, name=None, rack_row=None, rack_col=None):
+        temp_item = None
+        if name is not None:
+            self.inventory[inventory_slot - 1] = self.item_rack.get_item_by_name(name)
+            self.item_rack.remove_item_by_name(name)
+        else:
+            if rack_row is None and rack_col is None:
+                rack_row, rack_col = self.find_free_item_rack_slot()
+            temp_item = self.inventory[inventory_slot - 1]
+            self.inventory[inventory_slot - 1] = self.item_rack.get_item(rack_row, rack_col)
+            self.item_rack.set_item(rack_row, rack_col, temp_item)
 
     def ground_inventory_swap(self, inventory_slot, item_name=None):
         if item_name is not None:
@@ -66,7 +82,9 @@ class Profile:
         print()
 
     def print_item_rack(self):
-        self.item_rack.print_contents()
+        if self.item_rack.print_contents():
+            return True
+        return False
 
     def print_ground(self):
         if self.ground.print_ground():
@@ -81,6 +99,14 @@ class Profile:
     def save(self):
         self.item_rack.save()
         self.ground.save()
+        input("Chicken")
+        items_list = self.inventory[:]
+        for item in range(len(self.inventory)):
+            items_list[item] = pickle.dumps(items_list[item])
+        connect = sql.connect("Inventory" + str(self.slot_num) + ".db")
+        items_db = pd.DataFrame(items_list, columns=['Item'])
+        items_db.to_sql("Inventory", connect, if_exists='replace', index=False)
+        connect.close()
 
     def load(self):
         loaded = False
@@ -91,6 +117,17 @@ class Profile:
                 loaded = True
             except pd.errors.DatabaseError:
                 self.item_rack.save()
+        try:
+            connect = sql.connect("Inventory" + str(self.slot_num) + ".db")
+            items_list = pd.read_sql_query("SELECT * FROM Inventory", connect)
+            connect.close()
+            self.inventory = []
+            for item in range(len(items_list)):
+                items_list.iloc[item, 0] = pickle.loads(items_list.iloc[item, 0])
+                self.inventory.append(items_list.iloc[item, 0])
+
+        except (pd.errors.DatabaseError, IndexError, ValueError) as e:
+            self.inventory = [blank_item, blank_item, blank_item, blank_item]
 
     def clear(self):
         self.ground.clear_ground()
@@ -109,6 +146,16 @@ class Profile:
             if self.inventory[slot].get_name() == "Empty":
                 return False
         return True
+
+    def check_empty_item_rack(self):
+        if self.item_rack.check_empty():
+            return True
+        return False
+
+    def check_full_item_rack(self):
+        if self.item_rack.check_full():
+            return True
+        return False
 
 
 if __name__ == "__main__":

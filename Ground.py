@@ -2,6 +2,8 @@ import pickle
 import sqlite3 as sql
 import pandas as pd
 from InventoryItem import InventoryItem
+from Key import Key
+from Defaults import new_game_item_list_ground
 
 class Ground:
     def __init__(self, ground_file_name, items=None):
@@ -44,6 +46,7 @@ class Ground:
             for item in range(len(items_list)):
                 items_list.iloc[item, 0] = pickle.loads(items_list.iloc[item, 0])
                 self.items.append(items_list.iloc[item, 0])
+
         except (pd.errors.DatabaseError, IndexError, ValueError) as e:
             self.items = []
 
@@ -56,3 +59,6 @@ class Ground:
         else:
             print("No items on ground")
             return False
+
+    def clear_ground(self):
+        self.items = new_game_item_list_ground
